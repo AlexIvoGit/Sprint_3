@@ -1,97 +1,98 @@
 import io.qameta.allure.junit4.DisplayName;
+import io.restassured.response.Response;
 import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 
-import static io.restassured.RestAssured.given;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.notNullValue;
 
 @DisplayName("Логин курьера")
-public class LoginCourierTest extends BaseApiTest{
-    private final String ENDPOINT = "/api/v1/courier/login";
-    private List<String> courierData = scooterCourier.registerNewCourierAndReturnLoginPasswordFirstName();
-    private String login = courierData.get(0);
-    private String password = courierData.get(1);
+public class LoginCourierTest extends BaseApiTest {
+    private Map<String, String> generatedDataCourier;
+
+    @Before
+    @DisplayName("Подготовка тестовых данных")
+    public void createTestData() {
+        generatedDataCourier = courierClient.getMapGeneratedDataCourier();
+        courierClient.createCourier(generatedDataCourier);
+    }
 
 
     @Test
     @DisplayName("Авторизация курьера")
     public void authorizationCourier() {
-        //Составляем тело запроса
-        String body = scooterCourier.getBodyCourierForLogin(login, password);
+        //Отправляем запрос на логин курьера
+        Response response = courierClient.loginCourier(generatedDataCourier);
 
-        //Отправляем запрос на авторизацию
-        given()
-                .header("Content-type", "application/json")
-                .and()
-                .body(body)
-                .when()
-                .post(ENDPOINT)
-                .then().assertThat().body("id", notNullValue())//Проверяем, что ID вернулось
-                .and().statusCode(200); //Проверяем код ответа
+        //Проверяем код ответа
+        response.then()
+                .statusCode(200)
+                .body("id", notNullValue()); //Проверяем, что ID вернулось
+
     }
 
     @Test
     @DisplayName("Авторизация курьера без логина")
     public void authorizationCourierWithoutLogin() {
-        //Составляем тело запроса
-        String body = "{\n" +
-                "    \"password\": \"" + password + "\"\n" +
-                "}";
+        Map<String, String> dataCourier = new HashMap<>(generatedDataCourier);
 
-        //Отправляем запрос на авторизацию
-        given()
-                .header("Content-type", "application/json")
-                .and()
-                .body(body)
-                .when()
-                .post(ENDPOINT)
-                .then().assertThat().body("message", equalTo("Недостаточно данных для входа"))//Проверяем текст ошибки
-                .and().statusCode(400); //Проверяем код ответа
+        //Удаляем из сгенерированных данных login
+        dataCourier.remove("login");
+
+        //Отправляем запрос на логин курьера
+        Response response = courierClient.loginCourier(dataCourier);
+
+        //Проверяем код ответа
+        response.then()
+                .statusCode(400)
+                .body("message", equalTo("Недостаточно данных для входа")); //Проверяем текст ошибки
     }
 
     @Test
     @DisplayName("Авторизация курьера без пароля")
     public void authorizationCourierWithoutPassword() {
-        //Составляем тело запроса
-        String body = "{\n" +
-                "    \"login\": \"" + login + "\"\n" +
-                "}";
+        Map<String, String> dataCourier = new HashMap<>(generatedDataCourier);
 
-        //Отправляем запрос на авторизацию
-        given()
-                .header("Content-type", "application/json")
-                .and()
-                .body(body)
-                .when()
-                .post(ENDPOINT)
-                .then().assertThat().body("message", equalTo("Недостаточно данных для входа"))//Проверяем текст ошибки
-                .and().statusCode(400); //Проверяем код ответа
+        //Удаляем из сгенерированных данных password
+        dataCourier.remove("password");
+
+        //Отправляем запрос на логин курьера
+        Response response = courierClient.loginCourier(dataCourier);
+
+        //Проверяем код ответа
+        response.then()
+                .statusCode(400)
+                .body("message", equalTo("Недостаточно данных для входа")); //Проверяем текст ошибки
     }
 
     @Test
     @DisplayName("Авторизация курьера с невалидными данными")
     public void authorizationCourierNotValidData() {
-        //Составляем тело запроса
-        String body = scooterCourier.getBodyCourierForLogin("n", "1254");
+        Map<String, String> dataCourier = new HashMap<>(generatedDataCourier);
 
-        //Отправляем запрос на авторизацию
-        given()
-                .header("Content-type", "application/json")
-                .and()
-                .body(body)
-                .when()
-                .post(ENDPOINT)
-                .then().assertThat().body("message", equalTo("Учетная запись не найдена"))//Проверяем текст ошибки
-                .and().statusCode(404); //Проверяем код ответа
+        //Изменяем пароль
+        dataCourier.put("password", "09876432627");
+
+        //Отправляем запрос на логин курьера
+        Response response = courierClient.loginCourier(dataCourier);
+
+        //Проверяем код ответа
+        response.then()
+                .statusCode(404)
+                .body("message", equalTo("Учетная запись не найдена"));//Проверяем текст ошибки
     }
 
     @After
-    public void tearDown() {
-        //Удаляем созданного курьера
-        scooterCourier.deleteCourier(scooterCourier.getIdCourier(login, password));
+    @DisplayName("Удаление тестовых данных")
+    public void deleteTestData() {
+        //Получаем ID и удаляем курьера
+        int id = courierClient.getIdCourier(generatedDataCourier);
+        if (id != 0) {
+            courierClient.deleteCourier(String.valueOf(id));
+        }
     }
-
 }

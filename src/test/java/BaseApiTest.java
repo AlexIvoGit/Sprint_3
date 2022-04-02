@@ -1,9 +1,11 @@
+import api.client.CourierClient;
+import api.client.OrderClient;
 import io.restassured.RestAssured;
 import org.junit.BeforeClass;
-import util.ScooterCourier;
 
 public abstract class BaseApiTest {
-    protected final ScooterCourier scooterCourier = new ScooterCourier();
+    protected final CourierClient courierClient = new CourierClient();
+    protected final OrderClient orderClient = new OrderClient();
 
     @BeforeClass
     public static void setUp() {

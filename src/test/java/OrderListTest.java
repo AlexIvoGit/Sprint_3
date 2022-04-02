@@ -1,23 +1,16 @@
+import api.model.pojo.Orders;
 import io.qameta.allure.junit4.DisplayName;
-import org.junit.Assert;
 import org.junit.Test;
-import pojo.Orders;
 
-import static io.restassured.RestAssured.given;
+import static org.assertj.core.api.Assertions.assertThat;
 
 @DisplayName("Список заказов")
-public class OrderListTest extends BaseApiTest{
-    private final String ENDPOINT = "/api/v1/orders";
-
+public class OrderListTest extends BaseApiTest {
 
     @Test
     @DisplayName("Получение списка заказов")
     public void getOrdersTest() {
-        Orders orders = given()
-                .get(ENDPOINT)
-                .body().as(Orders.class);
-
-        Assert.assertTrue("Список заказов пуст", orders.getOrders().size() > 0);
-        int i = 0;
+        Orders allOrders = orderClient.getAllOrders();
+        assertThat(allOrders.getOrders().size()).as("Полученный список заказов пустой").isNotZero();
     }
 }

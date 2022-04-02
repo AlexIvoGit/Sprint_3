@@ -1,20 +1,19 @@
+import api.model.pojo.Order;
 import io.qameta.allure.junit4.DisplayName;
-import io.restassured.response.Response;
+import org.junit.After;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-import pojo.Order;
 
 import java.util.List;
 
-import static io.restassured.RestAssured.given;
 import static org.hamcrest.CoreMatchers.notNullValue;
 
 @RunWith(Parameterized.class)
 @DisplayName("Создание заказа")
-public class CreateOrderTest extends BaseApiTest{
-    private final String ENDPOINT = "/api/v1/orders";
+public class CreateOrderTest extends BaseApiTest {
     private final Order order;
+    private int track = 0;
 
 
     public CreateOrderTest(Order order) {
@@ -23,29 +22,29 @@ public class CreateOrderTest extends BaseApiTest{
 
     @Parameterized.Parameters
     public static Object[][] getData() {
-        return new Object[][] {
+        return new Object[][]{
                 {new Order(List.of("BLACK"))},
                 {new Order(List.of("GREY"))},
-                {new Order( List.of("BLACK", "GREY"))},
+                {new Order(List.of("BLACK", "GREY"))},
                 {new Order(List.of())}};
-        }
+    }
 
 
     @Test
     @DisplayName("Создание заказа с различными параметрами цвета")
-    public void createOrderWithParamTest(){
-        Response response = given()
-                .header("Content-type", "application/json")
-                .and()
-                .body(order)
-                .when()
-                .post(ENDPOINT);
-        int track = response.then().assertThat()
-                .body("track", notNullValue()) //Проверяем, что тело ответа содержит track
-                .and()
+    public void createOrderWithParamTest() {
+        track = orderClient.sendOrder(order).
+                then()
                 .statusCode(201)//Проверяем код ответа
-                .extract().body().path("track"); //Сохраняем трек заказа
+                .body("track", notNullValue()) //Проверяем, что тело ответа содержит track
+                .extract().body().path("track");
+    }
 
-        order.cancelOrder(track); //Отменяем заказ
+    @After
+    @DisplayName("Удаление тестовых данных")
+    public void deleteTestData() {
+        if (track != 0) {
+            orderClient.cancelOrder(track);
+        }
     }
 }

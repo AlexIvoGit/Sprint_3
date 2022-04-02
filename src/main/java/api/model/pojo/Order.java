@@ -1,4 +1,4 @@
-package pojo;
+package api.model.pojo;
 
 import io.restassured.response.Response;
 import org.apache.commons.lang3.RandomStringUtils;
@@ -10,7 +10,6 @@ import java.util.List;
 import static io.restassured.RestAssured.given;
 
 public class Order {
-    private final String BASE_URI = "https://qa-scooter.praktikum-services.ru";
 
     private String firstName;
     private String lastName;
@@ -47,24 +46,6 @@ public class Order {
         this.deliveryDate = deliveryDate;
         this.comment = comment;
         this.color = color;
-    }
-
-    public void cancelOrder(int track){
-        given()
-                .queryParam("track", String.valueOf(track))
-                .put(BASE_URI + "/api/v1/orders/cancel");// отправка PUT-запроса на отмену заказа
-
-    }
-
-    public int sendOrder(Order order){
-        Response response = given()
-                .header("Content-type", "application/json")
-                .and()
-                .body(order)
-                .when()
-                .post(BASE_URI + "/api/v1/orders");
-        return response.then()
-                .extract().body().path("track");
     }
 
     public String getFirstName() {
